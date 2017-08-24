@@ -1,54 +1,57 @@
 import _ from 'lodash';
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
-import YTSearch from 'youtube-api-search';
+import { createStore } from 'redux';
+import { Provider } from 'react-redux';
+import reducer from './reducers/index';
 import SearchBar from './components/search_bar';
-import VideoList from './components/video_list';
-import VideoDetail from './components/video_detail';
-
+import VideoList from './containers/video_list';
+import VideoDetail from './containers/video_detail';
+import YTSearch from 'youtube-api-search';
 const YT_API_KEY = 'AIzaSyDQzDmf05kL84zpgyHNkdorhWUycsPl2z8';
+
+
+
+const store = createStore(reducer, window.__REDUX_DEVTOOLS_EXTENSION__ &&
+                         window.__REDUX_DEVTOOLS_EXTENSION__());
+
 
 class App extends Component {
     constructor(props) {
         super(props);
-
-        this.state = {
-            videos: [],
-            selectedVideo: null
-        };
-
-        this.videoSearch('');
+        
+        this.search('');
     }
-
-    videoSearch(term) {
+    
+    search(term){
         YTSearch({key: YT_API_KEY, term: term}, (videos) => {
-            this.setState({
-                videos: videos,
-                selectedVideo: videos[0]
+            store.dispatch({
+                type: 'SET_SEARCHED_VALUES',
+                payload: videos
+            });
+            store.dispatch({
+                type: 'SET_SELECTED_VIDEO',
+                payload: videos[0]
             });
         });
     }
 
     render() {
-        const videoSearch = _.debounce((term) => { this.videoSearch(term) }, 400);
-
-        return (
+        const search = _.debounce((term) => { this.search(term) }, 400);
+        return(
             <div>
-                <SearchBar onSearchTermChange={videoSearch}/>
-                <VideoDetail
-                    video={ this.state.selectedVideo }
-                />
-                <VideoList
-                    videos = { this.state.videos }
-                    onVideoSelect = { selectedVideo => this.setState({ selectedVideo }) }
-                />
+                <SearchBar onTermChangeSearch={search}/>
+                <VideoDetail/>
+                <VideoList/>
             </div>
-        );
+        ); 
     }
 
 }
 
 ReactDOM.render(
-    <App/>,
+    <Provider store = {store}>
+        <App/>
+    </Provider>,
     document.querySelector('.container')
 );
