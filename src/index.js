@@ -1,56 +1,49 @@
 import _ from 'lodash';
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
-import { createStore } from 'redux';
-import { Provider } from 'react-redux';
+import {createStore, applyMiddleware} from 'redux';
+import {Provider} from 'react-redux';
+import thunk from 'redux-thunk';
 import reducer from './reducers/index';
 import SearchBar from './components/search_bar';
 import VideoList from './containers/video_list';
 import VideoDetail from './containers/video_detail';
-import YTSearch from 'youtube-api-search';
-const YT_API_KEY = 'AIzaSyDQzDmf05kL84zpgyHNkdorhWUycsPl2z8';
+import { asyncGetVideos } from "./actions/videos";
+
+import {composeWithDevTools} from 'redux-devtools-extension';
 
 
-
-const store = createStore(reducer, window.__REDUX_DEVTOOLS_EXTENSION__ &&
-                         window.__REDUX_DEVTOOLS_EXTENSION__());
+const store = createStore(reducer, composeWithDevTools(applyMiddleware(thunk)));
 
 
 class App extends Component {
     constructor(props) {
         super(props);
-        
+
         this.search('');
     }
-    
-    search(term){
-        YTSearch({key: YT_API_KEY, term: term}, (videos) => {
-            store.dispatch({
-                type: 'SET_SEARCHED_VALUES',
-                payload: videos
-            });
-            store.dispatch({
-                type: 'SET_SELECTED_VIDEO',
-                payload: videos[0]
-            });
-        });
+
+    search(term) {
+        store.dispatch(asyncGetVideos(term));
     }
 
     render() {
-        const search = _.debounce((term) => { this.search(term) }, 400);
-        return(
+        const search = _.debounce((term) => {
+            this.search(term)
+        }, 400);
+        return (
             <div>
                 <SearchBar onTermChangeSearch={search}/>
                 <VideoDetail/>
                 <VideoList/>
             </div>
-        ); 
+        );
     }
 
 }
 
 ReactDOM.render(
-    <Provider store = {store}>
+    <Provider store={store}>
         <App/>
     </Provider>,
     document.querySelector('.container')
